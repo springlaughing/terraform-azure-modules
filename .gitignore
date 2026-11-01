@@ -1,0 +1,9 @@
+# Modules are never applied on their own: no state, no tfvars
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# Lock files belong to the root module that uses these modules,
+# not to the modules themselves
+.terraform.lock.hcl
