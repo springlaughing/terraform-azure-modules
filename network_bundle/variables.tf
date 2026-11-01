@@ -29,9 +29,18 @@ variable "address_space" {
 }
 
 variable "subnets" {
-  description = "Subnets to create, keyed by a short role name (e.g. frontend, backend). The key becomes part of the subnet and NSG names."
+  description = "Subnets to create, keyed by a short role name (e.g. frontend, backend). The key becomes part of the subnet and NSG names. Optional security_rules are added to that subnet's NSG."
   type = map(object({
     address_prefix = string
+    security_rules = optional(list(object({
+      name                    = string
+      priority                = number
+      source_address_prefix   = string
+      destination_port_ranges = list(string)
+      direction               = optional(string, "Inbound")
+      access                  = optional(string, "Allow")
+      protocol                = optional(string, "Tcp")
+    })), [])
   }))
 
   validation {
@@ -47,6 +56,35 @@ variable "subnets" {
   validation {
     condition     = alltrue([for subnet in values(var.subnets) : can(cidrhost(subnet.address_prefix, 0))])
     error_message = "Every subnet needs a valid address_prefix, like 10.10.1.0/24."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for subnet in values(var.subnets) : [
+        for rule in subnet.security_rules : rule.priority >= 100 && rule.priority <= 4096
+      ]
+    ]))
+    error_message = "Security rule priorities must be between 100 and 4096."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for subnet in values(var.subnets) : [
+        for rule in subnet.security_rules :
+        contains(["Inbound", "Outbound"], rule.direction) &&
+        contains(["Allow", "Deny"], rule.access) &&
+        contains(["Tcp", "Udp", "Icmp", "*"], rule.protocol)
+      ]
+    ]))
+    error_message = "direction must be Inbound/Outbound, access Allow/Deny, protocol Tcp/Udp/Icmp/*."
+  }
+
+  validation {
+    condition = alltrue([
+      for subnet in values(var.subnets) :
+      length(distinct([for rule in subnet.security_rules : rule.priority])) == length(subnet.security_rules)
+    ])
+    error_message = "Within one subnet, every security rule needs a different priority."
   }
 }
 
