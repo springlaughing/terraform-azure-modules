@@ -3,6 +3,12 @@
 All notable changes to these modules. Versions follow semantic versioning:
 MAJOR = breaking change, MINOR = new feature, PATCH = bug fix.
 
+## v1.3.0 (2026-11-01)
+
+- aks_cluster: new module. AKS with Azure CNI Overlay, user-assigned identity, zonal system node pool,
+  automatic patch upgrades. Optional custom subnet with a Network Contributor role assignment
+  created before the cluster. Offline tests with a mocked azurerm provider.
+
 ## v1.2.0 (2026-11-01)
 
 - network_bundle: optional `security_rules` per subnet, added to that subnet's NSG.
