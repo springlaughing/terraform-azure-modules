@@ -43,3 +43,33 @@ module "network" {
 
 Outputs: `vnet_id`, `vnet_name`, `subnet_ids` (map by key), `nsg_ids` (map by key).
 `subnet_ids` is available only after each subnet's NSG is attached.
+
+### Security rules (since v1.2.0)
+
+Each subnet can get extra rules in its NSG. Without `security_rules`, only Azure's
+default rules apply (VNet and Azure Load Balancer allowed, internet denied).
+
+```hcl
+subnets = {
+  aks = {
+    address_prefix = "10.30.1.0/24"
+    security_rules = [{
+      name                    = "allow-http-https-from-internet"
+      priority                = 100
+      source_address_prefix   = "Internet"
+      destination_port_ranges = ["80", "443"]
+      # optional: direction = "Inbound", access = "Allow", protocol = "Tcp"
+    }]
+  }
+}
+```
+
+Rules are authoritative: rules added to the NSG outside Terraform are removed on the next apply.
+
+### Tests
+
+```bash
+cd network_bundle && terraform init && terraform test
+```
+
+Offline: the azurerm provider is mocked, nothing is created in Azure.
