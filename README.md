@@ -73,3 +73,31 @@ cd network_bundle && terraform init && terraform test
 ```
 
 Offline: the azurerm provider is mocked, nothing is created in Azure.
+
+## aks_cluster
+
+Creates one AKS cluster with Azure CNI Overlay, a user-assigned identity, and a system node pool
+spread across availability zones. Optionally uses an existing subnet; then the cluster identity
+gets Network Contributor on that subnet (created before the cluster).
+
+```hcl
+module "aks" {
+  source = "git::https://github.com/springlaughing/terraform-azure-modules.git//aks_cluster?ref=v1.3.0"
+
+  name                = "aks-example-dev"
+  resource_group_name = "rg-example-dev"
+  location            = "germanywestcentral"
+  kubernetes_version  = "1.36"
+
+  # optional: own VNet. Leave out (null) to let AKS create its own.
+  custom_subnet = { id = module.network.subnet_ids["aks"] }
+}
+```
+
+Defaults: 3 × Standard_B2s in zones 1-3, Free tier, automatic patch upgrades,
+pod CIDR 192.168.0.0/16, service CIDR 172.16.0.0/16.
+
+Outputs: `cluster_name`, `cluster_id`, `node_resource_group`, `identity_principal_id`,
+`kubelet_identity_object_id`, `oidc_issuer_url`.
+
+Tests (offline, mocked provider): `cd aks_cluster && terraform init && terraform test`
