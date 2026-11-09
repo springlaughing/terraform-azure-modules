@@ -75,3 +75,61 @@ run "patch_version_is_rejected" {
 
   expect_failures = [var.kubernetes_version]
 }
+# Default: same as v1.3.0, no policy engine (NetworkPolicies not enforced).
+run "default_has_no_network_policy" {
+  command = plan
+
+  # network_policy is computed by Azure, so the mock fills a null input with a
+  # random string. The default is therefore checked on the input.
+  assert {
+    condition     = var.network_policy == null
+    error_message = "By default there must be no network policy engine (unchanged from v1.3.0)."
+  }
+
+  assert {
+    condition     = azurerm_kubernetes_cluster.this.network_profile[0].network_data_plane == "azure"
+    error_message = "By default the data plane must be azure (unchanged from v1.3.0)."
+  }
+}
+
+# Cilium: both settings reach the cluster.
+run "cilium_enforces_network_policies" {
+  command = plan
+
+  variables {
+    network_data_plane = "cilium"
+    network_policy     = "cilium"
+  }
+
+  assert {
+    condition     = azurerm_kubernetes_cluster.this.network_profile[0].network_policy == "cilium"
+    error_message = "network_policy must be cilium."
+  }
+
+  assert {
+    condition     = azurerm_kubernetes_cluster.this.network_profile[0].network_data_plane == "cilium"
+    error_message = "network_data_plane must be cilium."
+  }
+}
+
+# Cilium policy without the Cilium data plane is refused before Azure sees it.
+run "cilium_policy_needs_cilium_data_plane" {
+  command = plan
+
+  variables {
+    network_policy = "cilium"
+  }
+
+  expect_failures = [azurerm_kubernetes_cluster.this]
+}
+
+# An unknown engine is refused.
+run "unknown_network_policy_is_rejected" {
+  command = plan
+
+  variables {
+    network_policy = "weave"
+  }
+
+  expect_failures = [var.network_policy]
+}

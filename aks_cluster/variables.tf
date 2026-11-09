@@ -87,6 +87,28 @@ variable "custom_subnet" {
   default = null
 }
 
+variable "network_data_plane" {
+  description = "Data plane of the pod network: \"azure\" or \"cilium\" (eBPF). \"cilium\" needs network_policy = \"cilium\"."
+  type        = string
+  default     = "azure"
+
+  validation {
+    condition     = contains(["azure", "cilium"], var.network_data_plane)
+    error_message = "network_data_plane must be azure or cilium."
+  }
+}
+
+variable "network_policy" {
+  description = "Engine that enforces Kubernetes NetworkPolicies: null, \"azure\", \"calico\" or \"cilium\". With null, NetworkPolicies are accepted but NOT enforced. \"cilium\" needs network_data_plane = \"cilium\"."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.network_policy == null || contains(["azure", "calico", "cilium"], var.network_policy)
+    error_message = "network_policy must be null, azure, calico or cilium."
+  }
+}
+
 variable "pod_cidr" {
   description = "Overlay range for pod IPs. Must not overlap the VNet or service_cidr."
   type        = string

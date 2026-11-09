@@ -82,7 +82,7 @@ gets Network Contributor on that subnet (created before the cluster).
 
 ```hcl
 module "aks" {
-  source = "git::https://github.com/springlaughing/terraform-azure-modules.git//aks_cluster?ref=v1.3.0"
+  source = "git::https://github.com/springlaughing/terraform-azure-modules.git//aks_cluster?ref=v1.4.0"
 
   name                = "aks-example-dev"
   resource_group_name = "rg-example-dev"
@@ -91,11 +91,16 @@ module "aks" {
 
   # optional: own VNet. Leave out (null) to let AKS create its own.
   custom_subnet = { id = module.network.subnet_ids["aks"] }
+
+  # optional: enforce Kubernetes NetworkPolicies with Cilium (both settings needed)
+  network_data_plane = "cilium"
+  network_policy     = "cilium"
 }
 ```
 
 Defaults: 3 × Standard_B2s in zones 1-3, Free tier, automatic patch upgrades,
 pod CIDR 192.168.0.0/16, service CIDR 172.16.0.0/16.
+No network policy engine by default: NetworkPolicies are then accepted but not enforced.
 
 Outputs: `cluster_name`, `cluster_id`, `node_resource_group`, `identity_principal_id`,
 `kubelet_identity_object_id`, `oidc_issuer_url`.
