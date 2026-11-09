@@ -61,6 +61,18 @@ resource "azurerm_kubernetes_cluster" "this" {
     dns_service_ip      = var.dns_service_ip
     load_balancer_sku   = "standard"
     outbound_type       = "loadBalancer"
+
+    # Without a policy engine, Kubernetes accepts NetworkPolicies but nothing
+    # enforces them. Cilium needs both settings set to "cilium".
+    network_data_plane = var.network_data_plane
+    network_policy     = var.network_policy
+  }
+
+  lifecycle {
+    precondition {
+      condition     = (var.network_data_plane == "cilium") == (var.network_policy == "cilium")
+      error_message = "Cilium needs both network_data_plane and network_policy set to \"cilium\"."
+    }
   }
 
   # The role must exist before AKS touches the subnet.
